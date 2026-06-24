@@ -1,7 +1,10 @@
 package com.codingclub.auth.service;
 
+import com.codingclub.auth.dto.GitHubRepoDto;
 import com.codingclub.auth.dto.GithubAuthRequest;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -9,22 +12,25 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.List;
+
 @Service
 public class GitHubService {
 
     private final RestTemplate restTemplate = new RestTemplate();
-    
-    // In production, these should be injected via @Value from application.yml
-    private final String clientId = "YOUR_CLIENT_ID";
-    private final String clientSecret = "YOUR_CLIENT_SECRET";
+
+    @Value("${github.client-id:YOUR_CLIENT_ID}")
+    private String clientId;
+
+    @Value("${github.client-secret:YOUR_CLIENT_SECRET}")
+    private String clientSecret;
 
     public String exchangeCodeForToken(String code) {
-        String url = "https://github.com/login/oauth/access_token?client_id=" + clientId + 
-                     "&client_secret=" + clientSecret + "&code=" + code;
+        String url = "https://github.com/login/oauth/access_token?client_id=" + clientId +
+                "&client_secret=" + clientSecret + "&code=" + code;
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("Accept", "application/json");
-
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
         ResponseEntity<JsonNode> response = restTemplate.exchange(url, HttpMethod.POST, entity, JsonNode.class);
@@ -41,7 +47,6 @@ public class GitHubService {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + accessToken);
         headers.set("Accept", "application/json");
-
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
         ResponseEntity<JsonNode> response = restTemplate.exchange(url, HttpMethod.GET, entity, JsonNode.class);
@@ -63,5 +68,16 @@ public class GitHubService {
             return request;
         }
         throw new RuntimeException("Failed to fetch GitHub user profile");
+    }
+
+    public List<GitHubRepoDto> getUserRepos(String username) {
+        String url = "https://api.github.com/users/" + username + "/repos?sort=updated&per_page=100";
+        ResponseEntity<List<GitHubRepoDto>> response = restTemplate.exchange(
+                url,
+                HttpMethod.GET,
+                HttpEntity.EMPTY,
+                new ParameterizedTypeReference<>() {}
+        );
+        return response.getBody();
     }
 }

@@ -28,3 +28,11 @@ eureka:
     serviceUrl:
       defaultZone: http://localhost:8761/eureka/
 
+jwt:
+  secret: ${JWT_SECRET:thisisaverysecuresecretkeythatisverylongandsecure!}
+  expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+
+github:
+  client-id: ${GITHUB_CLIENT_ID:YOUR_CLIENT_ID}
+  client-secret: ${GITHUB_CLIENT_SECRET:YOUR_CLIENT_SECRET}
+
