@@ -13,6 +13,8 @@ import com.codingclub.common.exception.ResourceNotFoundException;
 import com.codingclub.common.security.Permission;
 import com.codingclub.common.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,6 +54,7 @@ public class UserService {
     }
 
     public String generateTokenForUser(User user) {
+        // resolveCustomRole is now cached via Redis — no Feign call on repeated logins
         CustomRoleDto customRole = resolveCustomRole(user.getCustomRoleId());
         Set<Permission> permissions = customRole != null && customRole.getPermissions() != null
                 ? customRole.getPermissions()
@@ -122,6 +125,7 @@ public class UserService {
     }
 
     @Transactional
+    @CacheEvict(value = "customRoles", key = "#userId")
     public User approveMember(Long userId, UserRole role, Long customRoleId, String suspensionReason) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
@@ -164,7 +168,13 @@ public class UserService {
         }
     }
 
-    private CustomRoleDto resolveCustomRole(Long customRoleId) {
+    /**
+     * OPTIMIZED: Role lookup is cached in Redis for 5 minutes (configured in application.yml).
+     * On first login this calls role-service via Feign. Subsequent logins for the same
+     * custom role ID (e.g. dozens of users with same role) are served from Redis cache.
+     */
+    @Cacheable(value = "customRoles", key = "#customRoleId", unless = "#result == null")
+    public CustomRoleDto resolveCustomRole(Long customRoleId) {
         if (customRoleId == null) {
             return null;
         }

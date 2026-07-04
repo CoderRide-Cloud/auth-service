@@ -3,6 +3,7 @@ package com.codingclub.auth.service;
 import com.codingclub.auth.dto.GitHubRepoDto;
 import com.codingclub.auth.dto.GithubAuthRequest;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
@@ -17,7 +18,11 @@ import java.util.List;
 @Service
 public class GitHubService {
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    // OPTIMIZED: Injected pooled RestTemplate bean from HttpClientConfig
+    // Previously: private final RestTemplate restTemplate = new RestTemplate();
+    // — no connection pooling, no timeouts, new socket on every call.
+    @Autowired
+    private RestTemplate restTemplate;
 
     @Value("${github.client-id:YOUR_CLIENT_ID}")
     private String clientId;

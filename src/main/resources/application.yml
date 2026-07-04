@@ -8,6 +8,14 @@ spring:
     url: jdbc:postgresql://localhost:5432/coder_ride_auth
     username: coderride
     password: password
+    hikari:
+      # Connection pool tuning — reduces DB wait time on burst traffic
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 20000
+      idle-timeout: 300000
+      max-lifetime: 600000
+      pool-name: AuthHikariPool
   flyway:
     enabled: true
   jpa:
@@ -16,17 +24,37 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+        # Batch inserts for better write throughput
+        jdbc.batch_size: 25
+        order_inserts: true
+        order_updates: true
+  # Redis cache
+  redis:
+    host: ${SPRING_REDIS_HOST:localhost}
+    port: ${SPRING_REDIS_PORT:6379}
+    timeout: 2000ms
+  cache:
+    type: redis
+    redis:
+      time-to-live: 300000  # 5 minutes default TTL
 
   kafka:
     bootstrap-servers: localhost:9092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: 1
+      retries: 3
 
 eureka:
   client:
     serviceUrl:
       defaultZone: http://localhost:8761/eureka/
+    # Reduce discovery propagation lag from ~60s to ~10s
+    registry-fetch-interval-seconds: 10
+  instance:
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
 
 jwt:
   secret: ${JWT_SECRET:thisisaverysecuresecretkeythatisverylongandsecure!}
@@ -35,4 +63,3 @@ jwt:
 github:
   client-id: ${GITHUB_CLIENT_ID:YOUR_CLIENT_ID}
   client-secret: ${GITHUB_CLIENT_SECRET:YOUR_CLIENT_SECRET}
-

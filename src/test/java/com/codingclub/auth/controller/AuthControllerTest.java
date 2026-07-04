@@ -54,7 +54,7 @@ public class AuthControllerTest {
     @Test
     void testGithubSignIn() {
         when(userService.getOrCreateUser(any(GithubAuthRequest.class))).thenReturn(testUser);
-        when(jwtUtil.generateToken(1L, "MEMBER")).thenReturn("fake-jwt-token");
+        when(userService.generateTokenForUser(testUser)).thenReturn("fake-jwt-token");
 
         ResponseEntity<AuthResponse> response = authController.githubSignIn(request);
 
@@ -70,7 +70,7 @@ public class AuthControllerTest {
         when(gitHubService.exchangeCodeForToken("auth-code")).thenReturn("access-token");
         when(gitHubService.getGitHubUser("access-token")).thenReturn(request);
         when(userService.getOrCreateUser(any(GithubAuthRequest.class))).thenReturn(testUser);
-        when(jwtUtil.generateToken(1L, "MEMBER")).thenReturn("fake-jwt-token");
+        when(userService.generateTokenForUser(testUser)).thenReturn("fake-jwt-token");
 
         ResponseEntity<AuthResponse> response = authController.githubCallback(request);
 
