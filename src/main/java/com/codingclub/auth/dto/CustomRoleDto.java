@@ -5,8 +5,10 @@ import lombok.Data;
 
 import java.util.Set;
 
+import java.io.Serializable;
+
 @Data
-public class CustomRoleDto {
+public class CustomRoleDto implements Serializable {
     private Long id;
     private String name;
     private Integer position;
